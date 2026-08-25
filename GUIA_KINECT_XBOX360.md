@@ -38,7 +38,7 @@ El sistema utiliza visión por computadora avanzada (MediaPipe) para rastrear lo
 
 ### 1. ☝️ Modo Dibujo (1 Dedo Arriba)
 - **Gesto:** Levanta únicamente tu **dedo índice** (como apuntando).
-- **Acción:** Traza líneas suaves en el aire con el color activo (Amarillo, Azul o Verde).
+- **Acción:** Traza líneas suaves en el aire con el color activo (Rojo, Azul o Verde).
 
 ### 2. ✊ Detener Dibujo (Puño Cerrado)
 - **Gesto:** Cierra la mano formando un **puño** (todos los dedos doblados).
@@ -58,7 +58,7 @@ El sistema utiliza visión por computadora avanzada (MediaPipe) para rastrear lo
 
 | Botón | Función |
 | :--- | :--- |
-| 🟡 **AMARILLO** | Cambia el color del pincel a **Amarillo Brillante**. |
+| 🔴 **ROJO** | Cambia el color del pincel a **Rojo Brillante**. |
 | 🔵 **AZUL** | Cambia el color del pincel a **Azul Eléctrico**. |
 | 🟢 **VERDE** | Cambia el color del pincel a **Verde Neón**. |
 | ▶️ **INICIAR** | **Activa el modo de dibujo** para que puedas trazar con el dedo índice. |

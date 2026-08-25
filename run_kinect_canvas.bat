@@ -8,7 +8,7 @@ echo.
 echo Iniciando el programa de dibujo con el dedo en el aire...
 echo.
 echo BOTONES EN EL AIRE:
-echo   [ AMARILLO ]  [ AZUL ]  [ VERDE ]  [ INICIAR ]  [ DETENER ]  [ LIMPIAR ]
+echo   [ ROJO ]  [ AZUL ]  [ VERDE ]  [ INICIAR ]  [ DETENER ]  [ LIMPIAR ]
 echo.
 echo CONTROLES GESTUALES:
 echo   - 1 Dedo (Indice) arriba : DIBUJAR (cuando esta iniciado)

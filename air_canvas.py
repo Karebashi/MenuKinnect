@@ -1,16 +1,3 @@
-"""
-=============================================================================
-             LIENZO MÁGICO KINECT XBOX 360 / AIR CANVAS PRO
-=============================================================================
-Aplicación interactiva de dibujo en el aire para Kinect Xbox 360 y Webcams.
-- Dibuja con el dedo índice (☝️).
-- Selector de color en el aire: Amarillo, Azul y Verde.
-- Botones en el aire: INICIAR, DETENER y LIMPIAR.
-- Inicia detenido por defecto.
-- Controles gestuales: Puño cerrado (✊) DETIENE el dibujo, Mano abierta (🖐️) INICIA.
-=============================================================================
-"""
-
 import cv2
 import numpy as np
 import mediapipe as mp
@@ -37,7 +24,6 @@ except ImportError:
 
 
 def list_camera_devices():
-    """Enumera todos los nombres de dispositivos de captura de video conectados en Windows."""
     if HAS_PYGRABBER:
         try:
             graph = FilterGraph()
@@ -48,7 +34,6 @@ def list_camera_devices():
 
 
 def play_feedback_sound(sound_type="click"):
-    """Emite un sonido de confirmación en un hilo separado para no trabar el video."""
     if not HAS_SOUND:
         return
     def _beep():
@@ -186,7 +171,7 @@ class AirCanvasApp:
         self.notification_text = "Pincel DETENIDO [Toca INICIAR o abre la mano]"
         self.notification_time = time.time() + 4.0
 
-        # Crear los 6 botones superiores (Amarillo, Azul, Verde, Iniciar, Detener, Limpiar)
+        # Crear los 6 botones superiores (Rojo, Azul, Verde, Iniciar, Detener, Limpiar)
         self.buttons = self._create_buttons()
 
     def _init_camera(self, target):
@@ -250,16 +235,16 @@ class AirCanvasApp:
             self.show_notification("Kinect no responde. Verifica conexion")
 
     def _create_buttons(self):
-        """Construye los 6 botones superiores: Amarillo, Azul, Verde, Iniciar, Detener, Limpiar."""
+        """Construye los 6 botones superiores: Rojo, Azul, Verde, Iniciar, Detener, Limpiar."""
         buttons = []
         btn_height = 58
         btn_y1 = 15
         btn_y2 = btn_y1 + btn_height
 
         # 6 botones distribuidos en 1280px
-        # 1. Amarillo
-        buttons.append(AirButton("COLOR_AMARILLO", "AMARILLO", (20, btn_y1, 215, btn_y2),
-                                 bg_color=(0, 160, 210), text_color=(255, 255, 255), border_color=(0, 230, 255)))
+        # 1. Rojo
+        buttons.append(AirButton("COLOR_ROJO", "ROJO", (20, btn_y1, 215, btn_y2),
+                                 bg_color=(20, 20, 180), text_color=(255, 255, 255), border_color=(40, 40, 255)))
         # 2. Azul
         buttons.append(AirButton("COLOR_AZUL", "AZUL", (225, btn_y1, 420, btn_y2),
                                  bg_color=(190, 85, 0), text_color=(255, 255, 255), border_color=(255, 130, 0)))
@@ -290,10 +275,10 @@ class AirCanvasApp:
 
     def handle_button_trigger(self, btn_id):
         """Ejecuta la acción cuando se presiona un botón en el aire."""
-        if btn_id == "COLOR_AMARILLO":
-            self.current_color_key = "AMARILLO"
-            self.current_color_bgr = config.COLORS["AMARILLO"]
-            self.show_notification("Color: AMARILLO")
+        if btn_id == "COLOR_ROJO":
+            self.current_color_key = "ROJO"
+            self.current_color_bgr = config.COLORS["ROJO"]
+            self.show_notification("Color: ROJO")
             play_feedback_sound("click")
 
         elif btn_id == "COLOR_AZUL":
@@ -487,7 +472,7 @@ class AirCanvasApp:
         """Bucle principal de la aplicación."""
         print("="*60)
         print("Iniciando Lienzo Magico Kinect / Air Canvas...")
-        print("Botones Disponibles: AMARILLO | AZUL | VERDE | INICIAR | DETENER | LIMPIAR")
+        print("Botones Disponibles: ROJO | AZUL | VERDE | INICIAR | DETENER | LIMPIAR")
         print("Atajos de Teclado:")
         print("  - 'I'             : Invertir / Alternar modo espejo")
         print("  - 'C'             : Limpiar lienzo")
