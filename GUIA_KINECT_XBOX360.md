@@ -28,7 +28,7 @@ Para que Windows reconozca el flujo de video del Kinect:
 2. Reinicia la PC tras la instalación.
 3. El sensor encenderá su LED verde y Windows lo detectará como dispositivo de cámara de video.
 
-> **Nota:** La aplicación cuenta con un selector de cámaras integrado. Si tienes una webcam integrada y el Kinect conectado, puedes presionar las teclas `0`, `1` o `2` en el teclado para alternar entre el Kinect y tu webcam en tiempo real.
+> **🎯 Detección Automática:** El programa detecta y selecciona automáticamente la cámara del sensor Kinect como fuente principal de video al iniciar. Si conectas el Kinect después de haber abierto la aplicación, solo presiona la tecla `K` para conectarte a él de inmediato.
 
 ---
 
@@ -38,54 +38,46 @@ El sistema utiliza visión por computadora avanzada (MediaPipe) para rastrear lo
 
 ### 1. ☝️ Modo Dibujo (1 Dedo Arriba)
 - **Gesto:** Levanta únicamente tu **dedo índice** (como apuntando).
-- **Acción:** La punta del dedo actuará como un pincel, trazando líneas continuas y suaves con el color seleccionado.
+- **Acción:** Traza líneas suaves en el aire con el color activo (Amarillo, Azul o Verde).
 
-### 2. ✌️ Modo Selección / Menú (2 Dedos Arriba)
-- **Gesto:** Levanta el **dedo índice y el dedo medio** (signo de la paz ✌️).
-- **Acción:** Aparecerá una retícula/puntero flotante en la pantalla. En este modo puedes moverte libremente y apuntar a los botones superiores **sin pintar sobre la pantalla**.
+### 2. ✊ Detener Dibujo (Puño Cerrado)
+- **Gesto:** Cierra la mano formando un **puño** (todos los dedos doblados).
+- **Acción:** **Pausa y detiene el dibujo**. Puedes mover la mano libremente por el espacio sin pintar nada.
 
-### 3. 🎯 Botones en el Aire (Air Buttons)
-Para presionar cualquier botón superior con la mano:
-- Coloca el puntero del dedo sobre el botón durante **0.4 segundos** (verás una animación de carga circular o barra).
-- Al completarse, emitirá un sonido y activará la función.
+### 3. 🖐️ Reanudar Dibujo (Mano Abierta)
+- **Gesto:** Abre la palma de la **mano completa** (todos los dedos extendidos).
+- **Acción:** **Reanuda el modo de dibujo** para que puedas volver a pintar al levantar el dedo índice.
+
+### 4. ✌️ Modo Selección de Botones (2 Dedos Arriba o Tocar en el Aire)
+- **Gesto:** Levanta el **dedo índice y el dedo medio** (signo ✌️) o apunta a la barra superior.
+- **Acción:** Muestra un puntero/retícula flotante. Mantén el puntero sobre cualquier botón durante **0.4 segundos** para activarlo.
 
 ---
 
-## 🎨 4. Funciones de la Interfaz Superior
+## 🎨 4. Botones Flotantes en el Aire
 
 | Botón | Función |
 | :--- | :--- |
 | 🟡 **AMARILLO** | Cambia el color del pincel a **Amarillo Brillante**. |
 | 🔵 **AZUL** | Cambia el color del pincel a **Azul Eléctrico**. |
 | 🟢 **VERDE** | Cambia el color del pincel a **Verde Neón**. |
-| ⏯️ **PAUSAR / DIBUJAR** | Activa o detiene el modo de dibujo (permite mover la mano sin pintar). |
-| 📏 **GROSOR** | Alterna entre 4 grosores de trazo: Fino (4px), Medio (8px), Grueso (14px) y Extra (22px). |
-| 🧽 **BORRADOR** | Convierte la punta del dedo en un borrador. |
 | 🧹 **LIMPIAR** | Borra todo el lienzo al instante. |
-| 💾 **GUARDAR** | Guarda una captura en alta resolución en la carpeta `dibujos_guardados/`. |
 
 ---
 
-## ⌨️ 5. Atajos de Teclado Rápidos
+## ⌨️ 5. Atajos de Teclado Auxiliares
 
 - `Q` o `ESC` : Salir de la aplicación.
 - `C` : Limpiar todo el lienzo.
-- `S` : Guardar el dibujo en PNG.
-- `D` o `ESPACIO` : Alternar entre Iniciar / Detener el dibujo.
-- `M` : Alternar modo de visualización (**Realidad Aumentada sobre cámara** o **Pizarra Digital con miniatura de cámara**).
-- `0`, `1`, `2`, `3` : Cambiar índice de cámara/Kinect al instante.
+- `K` : Re-escanear y conectar al sensor Kinect.
+- `0`, `1`, `2`, `3` : Cambiar índice de cámara manualmente.
 
 ---
 
 ## 🚀 6. ¿Cómo Ejecutar el Programa?
 
-Puedes iniciarlo de dos formas:
-1. Haciendo doble clic en el archivo [`run_kinect_canvas.bat`](file:///c:/Users/Usuario/Downloads/MenuKinnect/run_kinect_canvas.bat).
-2. O ejecutando desde la terminal:
-   ```powershell
-   python air_canvas.py
-   ```
-   Si tu Kinect está en el índice 1:
-   ```powershell
-   python air_canvas.py --camera 1
-   ```
+Haz doble clic en el archivo [`run_kinect_canvas.bat`](file:///c:/Users/Usuario/Downloads/MenuKinnect/run_kinect_canvas.bat) o ejecuta desde la terminal:
+
+```powershell
+python air_canvas.py
+```

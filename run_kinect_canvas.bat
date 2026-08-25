@@ -7,14 +7,17 @@ echo =====================================================================
 echo.
 echo Iniciando el programa de dibujo con el dedo en el aire...
 echo.
-echo CONTROLES RAPIDOS:
-echo   - 1 Dedo (Indice) levantado : Modo DIBUJAR
-echo   - 2 Dedos levantados        : Modo SELECCIONAR / PUNTERO
-echo   - Tecla 'Q' o ESC           : Salir del programa
-echo   - Tecla 'C'                 : Limpiar lienzo
-echo   - Tecla 'S'                 : Guardar dibujo
-echo   - Tecla 'M'                 : Cambiar modo AR / Pizarra
-echo   - Teclas '0', '1', '2'      : Cambiar camara/Kinect
+echo CONTROLES GESTUALES:
+echo   - 1 Dedo (Indice) arriba : DIBUJAR en el aire
+echo   - 2 Dedos arriba         : MODO SELECCION / tocar botones
+echo   - Puno cerrado (Fist)    : DETENER dibujo
+echo   - Mano abierta           : REANUDAR dibujo
+echo.
+echo ATAJOS DE TECLADO:
+echo   - Tecla 'K'              : Reconectar a sensor Kinect
+echo   - Tecla 'C'              : Limpiar lienzo
+echo   - Tecla 'Q' o ESC        : Salir
+echo   - Teclas '0', '1', '2'   : Cambiar camara manualmente
 echo.
 python air_canvas.py
 if %ERRORLEVEL% NEQ 0 (

@@ -7,7 +7,7 @@ import os
 # Configuración de Video / Ventana
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
-CAMERA_INDEX = 0  # Índice de cámara por defecto (0 = predeterminada / Kinect)
+CAMERA_INDEX = 'auto'  # 'auto' para buscar y seleccionar Kinect por defecto automáticamente
 FPS_TARGET = 30
 
 # Paleta de Colores (Formato BGR para OpenCV)
@@ -26,14 +26,8 @@ COLOR_OPTIONS = [
 
 # Configuración del Pincel
 DEFAULT_COLOR = 'AMARILLO'
-DEFAULT_BRUSH_THICKNESS = 7
-ERASER_THICKNESS = 45
+BRUSH_THICKNESS = 8
 SMOOTHING_FACTOR = 0.55  # Factor de suavizado para evitar vibraciones en la mano
 
 # Tiempos de detección e interacción
 HOVER_DWELL_TIME = 0.40  # Segundos sobre un botón en el aire para activarlo
-
-# Carpeta donde se guardan las capturas
-SAVED_DRAWINGS_DIR = 'dibujos_guardados'
-if not os.path.exists(SAVED_DRAWINGS_DIR):
-    os.makedirs(SAVED_DRAWINGS_DIR, exist_ok=True)
