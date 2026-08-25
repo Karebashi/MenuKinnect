@@ -3,10 +3,11 @@
              LIENZO MÁGICO KINECT XBOX 360 / AIR CANVAS PRO
 =============================================================================
 Aplicación interactiva de dibujo en el aire para Kinect Xbox 360 y Webcams.
-- Dibuja con el dedo índice.
+- Dibuja con el dedo índice (☝️).
 - Selector de color en el aire: Amarillo, Azul y Verde.
-- Botón para limpiar el lienzo.
-- Control gestual: Puño cerrado (✊) DETIENE el dibujo, Mano abierta (🖐️) REANUDA.
+- Botones en el aire: INICIAR, DETENER y LIMPIAR.
+- Inicia detenido por defecto.
+- Controles gestuales: Puño cerrado (✊) DETIENE el dibujo, Mano abierta (🖐️) INICIA.
 =============================================================================
 """
 
@@ -18,8 +19,9 @@ import os
 import threading
 import sys
 
-# Importar configuraciones
+# Importar configuraciones y driver nativo de Kinect
 import config
+import kinect_driver
 
 try:
     import winsound
@@ -43,35 +45,6 @@ def list_camera_devices():
         except Exception:
             pass
     return []
-
-
-def detect_kinect_camera():
-    """
-    Busca de manera inteligente la cámara del Kinect de Xbox 360 / Kinect for Windows
-    entre todos los dispositivos conectados y retorna (índice, nombre).
-    """
-    devices = list_camera_devices()
-    print("\n[INFO] Escaneando dispositivos de camara disponibles:")
-    for idx, name in enumerate(devices):
-        print(f"   [{idx}] {name}")
-
-    # Palabras clave asociadas al Kinect de Xbox 360 y Kinect for Windows
-    kinect_keywords = ['kinect', 'xbox', 'nui', 'prime', 'sensor', 'depth']
-
-    # 1. Buscar coincidencia exacta o por palabra clave de Kinect
-    for idx, name in enumerate(devices):
-        name_lower = name.lower()
-        if any(keyword in name_lower for keyword in kinect_keywords):
-            print(f"[KINECT] !Sensor Kinect detectado automaticamente en el indice {idx}: '{name}'!")
-            return idx, name
-
-    # 2. Si no se detecta la palabra clave pero hay cámaras, reportar la primera
-    if devices:
-        print(f"[CAM] Usando dispositivo principal [0]: '{devices[0]}'")
-        return 0, devices[0]
-
-    print("[CAM] Usando indice de camara por defecto: 0")
-    return 0, "Camara Predeterminada"
 
 
 def play_feedback_sound(sound_type="click"):
@@ -162,7 +135,7 @@ class AirButton:
 
         # Texto centrado
         font = cv2.FONT_HERSHEY_DUPLEX
-        font_scale = 0.75
+        font_scale = 0.62
         font_thickness = 2
         text_size = cv2.getTextSize(self.text, font, font_scale, font_thickness)[0]
         text_x = x1 + (w - text_size[0]) // 2
@@ -177,19 +150,11 @@ class AirCanvasApp:
     def __init__(self, camera_index=None):
         self.width = config.WINDOW_WIDTH
         self.height = config.WINDOW_HEIGHT
+        self.camera_index = camera_index
+        self.camera_name = "Detectando..."
+        self.flip_camera = config.FLIP_CAMERA  # Control de inversión de cámara (False = Normal, True = Espejo)
 
-        # Si no se especifica o es 'auto', detectar automáticamente el Kinect
-        if camera_index is None or camera_index == 'auto':
-            self.camera_index, self.camera_name = detect_kinect_camera()
-        else:
-            self.camera_index = int(camera_index)
-            devices = list_camera_devices()
-            if 0 <= self.camera_index < len(devices):
-                self.camera_name = devices[self.camera_index]
-            else:
-                self.camera_name = f"Camara {self.camera_index}"
-
-        # Inicialización de captura de video
+        # Inicialización de captura de video (Prioridad a Kinect Xbox 360)
         self.cap = self._init_camera(self.camera_index)
 
         # Inicialización de MediaPipe Hands
@@ -208,33 +173,53 @@ class AirCanvasApp:
         self.current_color_key = config.DEFAULT_COLOR
         self.current_color_bgr = config.COLORS[self.current_color_key]
         self.brush_size = config.BRUSH_THICKNESS
-        self.drawing_enabled = True  # Puño = False, Mano abierta = True
+        
+        # Inicia DETENIDO por defecto
+        self.drawing_enabled = False
 
         # Puntos de seguimiento con suavizado
         self.prev_x, self.prev_y = 0, 0
         self.smooth_x, self.smooth_y = 0, 0
         self.has_prev_point = False
 
-        # Notificaciones en pantalla
-        is_kinect = any(kw in self.camera_name.lower() for kw in ['kinect', 'xbox', 'nui'])
-        if is_kinect:
-            self.notification_text = f"Kinect Conectado: {self.camera_name}"
-        else:
-            self.notification_text = f"Camara Activa: {self.camera_name}"
-        self.notification_time = time.time() + 3.5
+        # Notificación inicial
+        self.notification_text = "Pincel DETENIDO [Toca INICIAR o abre la mano]"
+        self.notification_time = time.time() + 4.0
 
-        # Crear los 4 botones principales distribuidos en la parte superior
+        # Crear los 6 botones superiores (Amarillo, Azul, Verde, Iniciar, Detener, Limpiar)
         self.buttons = self._create_buttons()
 
-    def _init_camera(self, index):
-        """Inicializa la cámara seleccionada optimizada con DirectShow si está en Windows."""
-        if sys.platform.startswith('win'):
-            cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
+    def _init_camera(self, target):
+        """Inicializa primero el sensor Kinect Xbox 360 nativo y si no está disponible recurre a WebCam."""
+        # 1. Intentar conectar al sensor Kinect Xbox 360 nativo
+        if target is None or target == 'auto' or target == 'kinect':
+            print("[INFO] Intentando conectar con el sensor Kinect Xbox 360 nativo...")
+            k_cam = kinect_driver.KinectSensorCamera()
+            if k_cam.isOpened():
+                self.camera_index = "Kinect"
+                self.camera_name = "Sensor Kinect Xbox 360"
+                print("[KINECT OK] Sensor Kinect Xbox 360 inicializado y transmitiendo en vivo.")
+                return k_cam
+            else:
+                print("[INFO] No se pudo inicializar Kinect nativo. Recurriendo a cámara web...")
+                target = 0
+
+        # 2. Conectar a cámara web estándar por índice numérico
+        idx = int(target) if str(target).isdigit() else 0
+        self.camera_index = idx
+        devices = list_camera_devices()
+        if 0 <= idx < len(devices):
+            self.camera_name = devices[idx]
         else:
-            cap = cv2.VideoCapture(index)
+            self.camera_name = f"Camara #{idx}"
+
+        if sys.platform.startswith('win'):
+            cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW)
+        else:
+            cap = cv2.VideoCapture(idx)
 
         if not cap.isOpened():
-            cap = cv2.VideoCapture(index)
+            cap = cv2.VideoCapture(idx)
 
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
@@ -242,48 +227,54 @@ class AirCanvasApp:
         return cap
 
     def change_camera(self, new_index):
-        """Cambia a otro índice de cámara en caliente."""
-        self.cap.release()
-        self.camera_index = new_index
-        devices = list_camera_devices()
-        if 0 <= self.camera_index < len(devices):
-            self.camera_name = devices[self.camera_index]
-        else:
-            self.camera_name = f"Camara {self.camera_index}"
-
-        self.cap = self._init_camera(self.camera_index)
+        """Cambia a otro índice de cámara web."""
+        if hasattr(self.cap, 'release'):
+            self.cap.release()
+        self.cap = self._init_camera(new_index)
         if self.cap.isOpened():
-            self.show_notification(f"Camara #{new_index}: {self.camera_name}")
+            self.show_notification(f"Camara activa: {self.camera_name}")
             play_feedback_sound("click")
         else:
-            self.show_notification(f"Error: Camara {new_index} no disponible")
+            self.show_notification(f"Error al abrir camara {new_index}")
 
     def connect_kinect(self):
-        """Re-escanea dispositivos y se conecta automáticamente al sensor Kinect."""
-        self.show_notification("Buscando sensor Kinect...")
-        k_idx, k_name = detect_kinect_camera()
-        self.change_camera(k_idx)
+        """Re-conecta al sensor Kinect Xbox 360 nativo."""
+        self.show_notification("Conectando al Kinect...")
+        if hasattr(self.cap, 'release'):
+            self.cap.release()
+        self.cap = self._init_camera('kinect')
+        if self.cap.isOpened():
+            self.show_notification("Sensor Kinect Xbox 360 Conectado")
+            play_feedback_sound("resume")
+        else:
+            self.show_notification("Kinect no responde. Verifica conexion")
 
     def _create_buttons(self):
-        """Construye los 4 botones superiores: Amarillo, Azul, Verde, Limpiar."""
+        """Construye los 6 botones superiores: Amarillo, Azul, Verde, Iniciar, Detener, Limpiar."""
         buttons = []
         btn_height = 58
         btn_y1 = 15
         btn_y2 = btn_y1 + btn_height
 
-        # 4 botones bien distribuidos en el ancho de 1280px
+        # 6 botones distribuidos en 1280px
         # 1. Amarillo
-        buttons.append(AirButton("COLOR_AMARILLO", "AMARILLO", (50, btn_y1, 320, btn_y2),
+        buttons.append(AirButton("COLOR_AMARILLO", "AMARILLO", (20, btn_y1, 215, btn_y2),
                                  bg_color=(0, 160, 210), text_color=(255, 255, 255), border_color=(0, 230, 255)))
         # 2. Azul
-        buttons.append(AirButton("COLOR_AZUL", "AZUL", (350, btn_y1, 620, btn_y2),
+        buttons.append(AirButton("COLOR_AZUL", "AZUL", (225, btn_y1, 420, btn_y2),
                                  bg_color=(190, 85, 0), text_color=(255, 255, 255), border_color=(255, 130, 0)))
         # 3. Verde
-        buttons.append(AirButton("COLOR_VERDE", "VERDE", (650, btn_y1, 920, btn_y2),
+        buttons.append(AirButton("COLOR_VERDE", "VERDE", (430, btn_y1, 625, btn_y2),
                                  bg_color=(25, 140, 25), text_color=(255, 255, 255), border_color=(60, 235, 60)))
-        # 4. Limpiar
-        buttons.append(AirButton("CLEAR", "LIMPIAR", (950, btn_y1, 1230, btn_y2),
-                                 bg_color=(25, 25, 160), text_color=(255, 255, 255), border_color=(50, 50, 255)))
+        # 4. Iniciar
+        buttons.append(AirButton("START_DRAW", "INICIAR", (640, btn_y1, 835, btn_y2),
+                                 bg_color=(20, 140, 60), text_color=(255, 255, 255), border_color=(50, 240, 100)))
+        # 5. Detener
+        buttons.append(AirButton("STOP_DRAW", "DETENER", (845, btn_y1, 1040, btn_y2),
+                                 bg_color=(30, 30, 160), text_color=(255, 255, 255), border_color=(60, 80, 255)))
+        # 6. Limpiar
+        buttons.append(AirButton("CLEAR", "LIMPIAR", (1050, btn_y1, 1260, btn_y2),
+                                 bg_color=(110, 30, 120), text_color=(255, 255, 255), border_color=(200, 70, 220)))
 
         return buttons
 
@@ -316,6 +307,16 @@ class AirCanvasApp:
             self.current_color_bgr = config.COLORS["VERDE"]
             self.show_notification("Color: VERDE")
             play_feedback_sound("click")
+
+        elif btn_id == "START_DRAW":
+            self.drawing_enabled = True
+            self.show_notification("Pincel: INICIADO (Activo)")
+            play_feedback_sound("resume")
+
+        elif btn_id == "STOP_DRAW":
+            self.drawing_enabled = False
+            self.show_notification("Pincel: DETENIDO (Pausado)")
+            play_feedback_sound("pause")
 
         elif btn_id == "CLEAR":
             self.clear_canvas()
@@ -359,7 +360,7 @@ class AirCanvasApp:
             play_feedback_sound("pause")
         elif is_open_hand and not self.drawing_enabled:
             self.drawing_enabled = True
-            self.show_notification("Pincel REANUDADO [Mano abierta]")
+            self.show_notification("Pincel INICIADO [Mano abierta]")
             play_feedback_sound("resume")
 
         # 4. Modo Selección / Menú: 2 dedos (Índice y Medio) o dedo en zona superior
@@ -382,7 +383,7 @@ class AirCanvasApp:
 
         cx, cy = cursor_pos if cursor_pos else (-1, -1)
 
-        # Procesar y dibujar los 4 botones
+        # Procesar y dibujar los 6 botones
         for btn in self.buttons:
             is_hovering = btn.contains(cx, cy) and (is_selection_mode or cy < 90)
             triggered = btn.update(is_hovering, curr_time, config.HOVER_DWELL_TIME)
@@ -390,15 +391,23 @@ class AirCanvasApp:
             if triggered:
                 self.handle_button_trigger(btn.btn_id)
 
-            is_selected = (btn.btn_id == f"COLOR_{self.current_color_key}")
+            # Destacar botón seleccionado
+            is_selected = False
+            if btn.btn_id == f"COLOR_{self.current_color_key}":
+                is_selected = True
+            elif btn.btn_id == "START_DRAW" and self.drawing_enabled:
+                is_selected = True
+            elif btn.btn_id == "STOP_DRAW" and not self.drawing_enabled:
+                is_selected = True
+
             btn.draw(img, is_selected=is_selected)
 
         # Barra de estado inferior izquierda
         hud_box_y = self.height - 70
         overlay_bottom = img.copy()
-        cv2.rectangle(overlay_bottom, (15, hud_box_y), (520, self.height - 15), (20, 20, 25), -1)
+        cv2.rectangle(overlay_bottom, (15, hud_box_y), (540, self.height - 15), (20, 20, 25), -1)
         cv2.addWeighted(overlay_bottom, 0.75, img, 0.25, 0, img)
-        cv2.rectangle(img, (15, hud_box_y), (520, self.height - 15), (70, 70, 90), 1, cv2.LINE_AA)
+        cv2.rectangle(img, (15, hud_box_y), (540, self.height - 15), (70, 70, 90), 1, cv2.LINE_AA)
 
         # Muestra del color actual activo
         cv2.circle(img, (40, hud_box_y + 27), 16, self.current_color_bgr, -1)
@@ -406,21 +415,21 @@ class AirCanvasApp:
 
         # Estado del pincel
         if not self.drawing_enabled:
-            status_text = "DETENIDO (Puno cerrado)"
+            status_text = "DETENIDO (Toca INICIAR o abre mano)"
             status_color = (0, 70, 255)  # Rojo / Naranja
         elif is_drawing_mode:
             status_text = f"DIBUJANDO ({self.current_color_key})"
             status_color = (0, 255, 0)   # Verde
         else:
-            status_text = "LISTO (Levanta 1 dedo para dibujar)"
+            status_text = "INICIADO (Levanta 1 dedo para dibujar)"
             status_color = (255, 200, 0) # Cyan
 
         cv2.putText(img, f"PINCEL: {status_text}", (70, hud_box_y + 25),
-                    cv2.FONT_HERSHEY_DUPLEX, 0.52, status_color, 1, cv2.LINE_AA)
+                    cv2.FONT_HERSHEY_DUPLEX, 0.50, status_color, 1, cv2.LINE_AA)
 
-        hint = "1 Dedo: Dibujar | 2 Dedos: Boton | Puno: Detener | Mano abierta: Reanudar"
+        hint = "1 Dedo: Dibujar | Botones: INICIAR / DETENER / LIMPIAR | 'I': Espejo"
         cv2.putText(img, hint, (70, hud_box_y + 45),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.36, (180, 180, 180), 1, cv2.LINE_AA)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.35, (180, 180, 180), 1, cv2.LINE_AA)
 
         # Indicador de Cámara Activa en la esquina inferior derecha
         cam_box_w = 340
@@ -430,18 +439,19 @@ class AirCanvasApp:
         cv2.addWeighted(overlay_cam, 0.75, img, 0.25, 0, img)
         cv2.rectangle(img, (cam_box_x, hud_box_y), (self.width - 15, self.height - 15), (70, 70, 90), 1, cv2.LINE_AA)
 
-        is_kinect = any(kw in self.camera_name.lower() for kw in ['kinect', 'xbox', 'nui'])
+        is_kinect = "kinect" in self.camera_name.lower()
         cam_tag = " [Kinect OK]" if is_kinect else ""
         cam_color = (60, 235, 60) if is_kinect else (0, 220, 255)
+        mirror_tag = " (Espejo)" if self.flip_camera else " (Normal)"
 
-        cv2.putText(img, f"Cam #{self.camera_index}: {self.camera_name[:20]}{cam_tag}", (cam_box_x + 12, hud_box_y + 25),
-                    cv2.FONT_HERSHEY_DUPLEX, 0.45, cam_color, 1, cv2.LINE_AA)
-        cv2.putText(img, "Presiona 'K' para conectar Kinect | 0-4 cam", (cam_box_x + 12, hud_box_y + 45),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.36, (180, 180, 180), 1, cv2.LINE_AA)
+        cv2.putText(img, f"Cam: {self.camera_name[:18]}{cam_tag}", (cam_box_x + 12, hud_box_y + 25),
+                    cv2.FONT_HERSHEY_DUPLEX, 0.43, cam_color, 1, cv2.LINE_AA)
+        cv2.putText(img, f"Modo:{mirror_tag} | 'I': Invertir | 'K': Kinect", (cam_box_x + 12, hud_box_y + 45),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.35, (180, 180, 180), 1, cv2.LINE_AA)
 
         # Notificación flotante central
         if curr_time < self.notification_time:
-            notif_w = 460
+            notif_w = 520
             notif_x = (self.width - notif_w) // 2
             notif_y = 105
             overlay_notif = img.copy()
@@ -449,7 +459,7 @@ class AirCanvasApp:
             cv2.addWeighted(overlay_notif, 0.85, img, 0.15, 0, img)
             cv2.rectangle(img, (notif_x, notif_y), (notif_x + notif_w, notif_y + 45), (0, 230, 255), 2, cv2.LINE_AA)
             cv2.putText(img, self.notification_text, (notif_x + 15, notif_y + 28),
-                        cv2.FONT_HERSHEY_DUPLEX, 0.55, (255, 255, 255), 1, cv2.LINE_AA)
+                        cv2.FONT_HERSHEY_DUPLEX, 0.52, (255, 255, 255), 1, cv2.LINE_AA)
 
     def draw_cursor(self, img, pos, is_drawing_mode, is_selection_mode):
         """Dibuja el cursor neón en la punta del dedo."""
@@ -458,12 +468,16 @@ class AirCanvasApp:
         x, y = pos
 
         if is_drawing_mode and self.drawing_enabled and y > 85:
-            # Cursor de dibujo
+            # Cursor de dibujo activo
             radius = max(6, self.brush_size)
             cv2.circle(img, (x, y), radius, self.current_color_bgr, -1, cv2.LINE_AA)
             cv2.circle(img, (x, y), radius + 2, (255, 255, 255), 2, cv2.LINE_AA)
+        elif not self.drawing_enabled and y > 85:
+            # Cursor cuando está DETENIDO (Círculo rojo suave con retícula)
+            cv2.circle(img, (x, y), 10, (0, 70, 255), 2, cv2.LINE_AA)
+            cv2.circle(img, (x, y), 2, (0, 70, 255), -1, cv2.LINE_AA)
         elif is_selection_mode or y <= 85:
-            # Cursor de selección (Retícula)
+            # Cursor de selección (Retícula cyan)
             cv2.circle(img, (x, y), 12, (0, 255, 255), 2, cv2.LINE_AA)
             cv2.circle(img, (x, y), 3, (0, 255, 255), -1, cv2.LINE_AA)
             cv2.line(img, (x - 18, y), (x + 18, y), (0, 255, 255), 1, cv2.LINE_AA)
@@ -473,16 +487,12 @@ class AirCanvasApp:
         """Bucle principal de la aplicación."""
         print("="*60)
         print("Iniciando Lienzo Magico Kinect / Air Canvas...")
-        print("Controles Gestuales:")
-        print("  - 1 Dedo (Indice) : Dibujar en el aire")
-        print("  - 2 Dedos         : Modo seleccion de botones")
-        print("  - Puno cerrado    : DETENER dibujo")
-        print("  - Mano abierta    : REANUDAR dibujo")
+        print("Botones Disponibles: AMARILLO | AZUL | VERDE | INICIAR | DETENER | LIMPIAR")
         print("Atajos de Teclado:")
-        print("  - 'Q' o ESC       : Salir")
+        print("  - 'I'             : Invertir / Alternar modo espejo")
         print("  - 'C'             : Limpiar lienzo")
         print("  - 'K'             : Re-conectar a Kinect")
-        print("  - '0'..'4'        : Cambiar camara")
+        print("  - 'Q' o ESC       : Salir")
         print("="*60)
 
         window_name = "Lienzo Magico Kinect - Air Canvas"
@@ -495,9 +505,12 @@ class AirCanvasApp:
                 time.sleep(0.03)
                 continue
 
-            # Redimensionar y efecto espejo horizontal
+            # Redimensionar
             frame = cv2.resize(frame, (self.width, self.height))
-            frame = cv2.flip(frame, 1)
+
+            # Inversión de imagen (si flip_camera está habilitado)
+            if self.flip_camera:
+                frame = cv2.flip(frame, 1)
 
             # Procesamiento de mano con MediaPipe
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -568,6 +581,11 @@ class AirCanvasApp:
                 break
             elif key == ord('c') or key == ord('C'):
                 self.clear_canvas()
+            elif key == ord('i') or key == ord('I'):
+                self.flip_camera = not self.flip_camera
+                modo = "ESPEJO" if self.flip_camera else "NORMAL (Sin invertir)"
+                self.show_notification(f"Camara: {modo}")
+                play_feedback_sound("click")
             elif key == ord('k') or key == ord('K'):
                 self.connect_kinect()
             elif key in [ord('0'), ord('1'), ord('2'), ord('3'), ord('4')]:

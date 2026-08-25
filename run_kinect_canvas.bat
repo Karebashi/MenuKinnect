@@ -7,15 +7,19 @@ echo =====================================================================
 echo.
 echo Iniciando el programa de dibujo con el dedo en el aire...
 echo.
+echo BOTONES EN EL AIRE:
+echo   [ AMARILLO ]  [ AZUL ]  [ VERDE ]  [ INICIAR ]  [ DETENER ]  [ LIMPIAR ]
+echo.
 echo CONTROLES GESTUALES:
-echo   - 1 Dedo (Indice) arriba : DIBUJAR en el aire
+echo   - 1 Dedo (Indice) arriba : DIBUJAR (cuando esta iniciado)
 echo   - 2 Dedos arriba         : MODO SELECCION / tocar botones
 echo   - Puno cerrado (Fist)    : DETENER dibujo
-echo   - Mano abierta           : REANUDAR dibujo
+echo   - Mano abierta           : INICIAR dibujo
 echo.
 echo ATAJOS DE TECLADO:
-echo   - Tecla 'K'              : Reconectar a sensor Kinect
+echo   - Tecla 'I'              : Invertir / Alternar modo espejo
 echo   - Tecla 'C'              : Limpiar lienzo
+echo   - Tecla 'K'              : Reconectar a sensor Kinect
 echo   - Tecla 'Q' o ESC        : Salir
 echo   - Teclas '0', '1', '2'   : Cambiar camara manualmente
 echo.

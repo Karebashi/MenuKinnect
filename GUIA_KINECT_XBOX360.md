@@ -61,15 +61,18 @@ El sistema utiliza visión por computadora avanzada (MediaPipe) para rastrear lo
 | 🟡 **AMARILLO** | Cambia el color del pincel a **Amarillo Brillante**. |
 | 🔵 **AZUL** | Cambia el color del pincel a **Azul Eléctrico**. |
 | 🟢 **VERDE** | Cambia el color del pincel a **Verde Neón**. |
+| ▶️ **INICIAR** | **Activa el modo de dibujo** para que puedas trazar con el dedo índice. |
+| ⏹️ **DETENER** | **Detiene y pausa el dibujo** (inicia detenido por defecto). |
 | 🧹 **LIMPIAR** | Borra todo el lienzo al instante. |
 
 ---
 
 ## ⌨️ 5. Atajos de Teclado Auxiliares
 
-- `Q` o `ESC` : Salir de la aplicación.
+- `I` : Invertir / Alternar modo espejo y normal de la cámara.
 - `C` : Limpiar todo el lienzo.
 - `K` : Re-escanear y conectar al sensor Kinect.
+- `Q` o `ESC` : Salir de la aplicación.
 - `0`, `1`, `2`, `3` : Cambiar índice de cámara manualmente.
 
 ---

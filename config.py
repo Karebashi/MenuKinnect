@@ -9,6 +9,7 @@ WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
 CAMERA_INDEX = 'auto'  # 'auto' para buscar y seleccionar Kinect por defecto automáticamente
 FPS_TARGET = 30
+FLIP_CAMERA = False  # False para cámara sin invertir (normal), True para modo espejo
 
 # Paleta de Colores (Formato BGR para OpenCV)
 COLORS = {
